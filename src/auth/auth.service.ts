@@ -43,15 +43,17 @@ export class AuthService {
         email: dto.email,
       },
     });
-    if (!user)
+    if (!user) {
       throw new ForbiddenException(
         'メールアドレスかパスワードが間違っています',
       );
+    }
     const isValid = await bcrypt.compare(dto.password, user.hashedPassword);
-    if (!isValid)
+    if (!isValid) {
       throw new ForbiddenException(
         'メールアドレスかパスワードが間違っています',
       );
+    }
     return this.generateJwt(user.id, user.email);
   }
 

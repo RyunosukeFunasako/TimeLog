@@ -19,8 +19,18 @@ export class ProjectService {
     });
   }
 
-  getProjectById(userId: number, projectId: number): Promise<Project> {
-    return this.prisma.project.findFirst({
+  async getProjectById(userId: number, projectId: number): Promise<Project> {
+    const project = await this.prisma.project.findUnique({
+      where: {
+        id: projectId,
+      },
+    });
+    if (!project || project.userId !== userId) {
+      throw new ForbiddenException(
+        'projectが存在しない、もしくはあなたに閲覧の権限がありません',
+      );
+    }
+    return this.prisma.project.findUnique({
       where: {
         userId,
         id: projectId,
@@ -48,12 +58,11 @@ export class ProjectService {
         id: projectId,
       },
     });
-
-    if (!project || project.userId !== userId)
+    if (!project || project.userId !== userId) {
       throw new ForbiddenException(
         'projectが存在しない、もしくはあなたに更新の権限がありません',
       );
-
+    }
     return this.prisma.project.update({
       where: {
         id: projectId,
@@ -70,12 +79,11 @@ export class ProjectService {
         id: projectId,
       },
     });
-
-    if (!project || project.userId !== userId)
+    if (!project || project.userId !== userId) {
       throw new ForbiddenException(
         'projectが存在しない、もしくはあなたに削除の権限がありません',
       );
-
+    }
     await this.prisma.project.delete({
       where: {
         id: projectId,
