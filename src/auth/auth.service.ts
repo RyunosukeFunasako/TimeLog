@@ -39,9 +39,7 @@ export class AuthService {
   }
   async login(dto: AuthDto): Promise<Jwt> {
     const user = await this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
+      where: { email: dto.email },
     });
     if (!user) {
       throw new ForbiddenException(

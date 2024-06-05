@@ -1,5 +1,6 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaHelper } from 'src/prisma/prisma.helper';
 import { CreateWorkDto } from './dto/create-work.dto';
 import { UpdateWorkDto } from './dto/update-work.dto';
 import { WorkSession } from '@prisma/client';
@@ -12,26 +13,10 @@ export class WorkService {
     userId: number,
     projectId: number,
   ): Promise<WorkSession[]> {
-    const project = await this.prisma.project.findUnique({
-      where: {
-        id: projectId,
-      },
-    });
-    if (!project || project.userId !== userId) {
-      throw new ForbiddenException(
-        'projectが存在しない、もしくはあなたに閲覧の権限がありません',
-      );
-    }
+    await PrismaHelper.validateUserProject(this.prisma, userId, projectId);
     return this.prisma.workSession.findMany({
-      where: {
-        projectId,
-        project: {
-          userId: userId,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -40,32 +25,14 @@ export class WorkService {
     projectId: number,
     workSessionId: number,
   ): Promise<WorkSession> {
-    const project = await this.prisma.project.findUnique({
-      where: {
-        id: projectId,
-      },
-    });
-    if (!project || project.userId !== userId) {
-      throw new ForbiddenException(
-        'projectが存在しない、もしくはあなたに閲覧の権限がありません',
-      );
-    }
-    const workSession = await this.prisma.workSession.findUnique({
-      where: {
-        id: workSessionId,
-      },
-    });
-    if (!workSession || workSession.projectId !== projectId) {
-      throw new ForbiddenException('projectIdかworkSessionIdが間違えています');
-    }
+    await PrismaHelper.validateUserProject(this.prisma, userId, projectId);
+    await PrismaHelper.validateWorkSession(
+      this.prisma,
+      projectId,
+      workSessionId,
+    );
     return this.prisma.workSession.findUnique({
-      where: {
-        projectId,
-        id: workSessionId,
-        project: {
-          userId: userId,
-        },
-      },
+      where: { id: workSessionId },
     });
   }
 
@@ -74,16 +41,7 @@ export class WorkService {
     projectId: number,
     dto: CreateWorkDto,
   ): Promise<WorkSession> {
-    const project = await this.prisma.project.findUnique({
-      where: {
-        id: projectId,
-      },
-    });
-    if (!project || project.userId !== userId) {
-      throw new ForbiddenException(
-        'projectが存在しない、もしくはあなたに作成の権限がありません',
-      );
-    }
+    await PrismaHelper.validateUserProject(this.prisma, userId, projectId);
     const workSession = await this.prisma.workSession.create({
       data: {
         projectId,
@@ -99,31 +57,15 @@ export class WorkService {
     workSessionId: number,
     dto: UpdateWorkDto,
   ): Promise<WorkSession> {
-    const project = await this.prisma.project.findUnique({
-      where: {
-        id: projectId,
-      },
-    });
-    if (!project || project.userId !== userId) {
-      throw new ForbiddenException(
-        'projectが存在しない、もしくはあなたに更新の権限がありません',
-      );
-    }
-    const workSession = await this.prisma.workSession.findUnique({
-      where: {
-        id: workSessionId,
-      },
-    });
-    if (!workSession || workSession.projectId !== projectId) {
-      throw new ForbiddenException('projectIdかworkSessionIdが間違えています');
-    }
+    await PrismaHelper.validateUserProject(this.prisma, userId, projectId);
+    await PrismaHelper.validateWorkSession(
+      this.prisma,
+      projectId,
+      workSessionId,
+    );
     return this.prisma.workSession.update({
-      where: {
-        id: workSessionId,
-      },
-      data: {
-        ...dto,
-      },
+      where: { id: workSessionId },
+      data: { ...dto },
     });
   }
 
@@ -132,28 +74,14 @@ export class WorkService {
     projectId: number,
     workSessionId: number,
   ): Promise<void> {
-    const project = await this.prisma.project.findUnique({
-      where: {
-        id: projectId,
-      },
-    });
-    if (!project || project.userId !== userId) {
-      throw new ForbiddenException(
-        'projectが存在しない、もしくはあなたに削除の権限がありません',
-      );
-    }
-    const workSession = await this.prisma.workSession.findUnique({
-      where: {
-        id: workSessionId,
-      },
-    });
-    if (!workSession || workSession.projectId !== projectId) {
-      throw new ForbiddenException('projectIdかworkSessionIdが間違えています');
-    }
+    await PrismaHelper.validateUserProject(this.prisma, userId, projectId);
+    await PrismaHelper.validateWorkSession(
+      this.prisma,
+      projectId,
+      workSessionId,
+    );
     await this.prisma.workSession.delete({
-      where: {
-        id: workSessionId,
-      },
+      where: { id: workSessionId },
     });
   }
 }
